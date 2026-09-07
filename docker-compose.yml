@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: ticketpro_postgres
+    environment:
+      POSTGRES_DB: ticketpro_db
+      POSTGRES_USER: ticketpro_user
+      POSTGRES_PASSWORD: ticketpro_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketpro_user -d ticketpro_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: ticketpro_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: ticketpro_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://ticketpro_user:ticketpro_password@postgres:5432/ticketpro_db
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=super-secret-key-ticketpro-enterprise-32bytes
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: ticketpro_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
