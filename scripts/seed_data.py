@@ -16,6 +16,17 @@ from app.models.knowledge_base import KnowledgeBaseArticle
 from app.models.notification import Notification
 from app.models.audit import AuditLog
 from app.models.system import SystemSetting, Integration
+from app.models.asset import Asset
+from app.models.change_request import ChangeRequest
+from app.models.problem import Problem
+from app.models.survey import SurveyResponse
+from app.models.time_tracking import TimeEntry
+from app.models.vendor import Vendor, SoftwareLicense
+from app.models.contract import Contract
+from app.models.on_call import OnCallRotation, OnCallShift
+from app.models.service_catalog import ServiceCatalogCategory, ServiceCatalogItem
+from app.models.custom_field import CustomField
+from app.models.email_template import EmailTemplate
 
 def seed_database():
     print("Initializing Database Schema...")
@@ -61,221 +72,123 @@ def seed_database():
 
         print("Seeding SLA Policies...")
         sla_policies = [
-            SLAPolicy(name="Critical Priority SLA", priority="CRITICAL", max_first_response_minutes=15, max_resolution_minutes=120, warning_threshold_percent=80.0, is_default=False),
-            SLAPolicy(name="High Priority SLA", priority="HIGH", max_first_response_minutes=30, max_resolution_minutes=240, warning_threshold_percent=80.0, is_default=False),
-            SLAPolicy(name="Medium Priority SLA", priority="MEDIUM", max_first_response_minutes=120, max_resolution_minutes=480, warning_threshold_percent=80.0, is_default=True),
-            SLAPolicy(name="Low Priority SLA", priority="LOW", max_first_response_minutes=480, max_resolution_minutes=1440, warning_threshold_percent=80.0, is_default=False)
+            SLAPolicy(name="Critical Priority SLA", priority="CRITICAL", max_first_response_minutes=15, max_resolution_minutes=120, warning_threshold_percent=75, is_default=False),
+            SLAPolicy(name="High Priority SLA", priority="HIGH", max_first_response_minutes=60, max_resolution_minutes=240, warning_threshold_percent=80, is_default=False),
+            SLAPolicy(name="Medium Priority SLA", priority="MEDIUM", max_first_response_minutes=120, max_resolution_minutes=480, warning_threshold_percent=80, is_default=True),
+            SLAPolicy(name="Low Priority SLA", priority="LOW", max_first_response_minutes=240, max_resolution_minutes=1440, warning_threshold_percent=85, is_default=False)
         ]
         db.add_all(sla_policies)
         db.flush()
 
         print("Seeding Ticket Categories...")
         categories_data = [
-            ("Hardware", "Laptops, monitors, peripherals, and desk equipment", "MEDIUM", "IT", "Laptop"),
-            ("Software", "SaaS subscriptions, operating systems, and dev tools", "MEDIUM", "IT", "Code"),
-            ("Network & VPN", "Wi-Fi connectivity, VPN access, and firewall issues", "HIGH", "IT", "Wifi"),
-            ("Email & Identity", "Email access, OAuth login, and password resets", "HIGH", "SEC", "Mail"),
-            ("Access & Permissions", "Access requests for AWS, GitHub, Jira, and internal tools", "HIGH", "SEC", "Key"),
-            ("Security Incident", "Suspicious emails, phishing, or security alerts", "CRITICAL", "SEC", "ShieldAlert"),
-            ("HR & Payroll", "Payroll queries, benefits, and HR documentation", "MEDIUM", "HR", "Users"),
-            ("Facilities & Office", "Desk setup, HVAC, badge access, and office repairs", "LOW", "FAC", "Building"),
-            ("General Other", "Miscellaneous support inquiries", "LOW", "IT", "HelpCircle")
+            ("Hardware & Laptops", "Laptops, monitors, workstations, peripherals, and replacement parts", "MEDIUM", "IT"),
+            ("Software & SaaS", "App crashes, license activation, installation, and browser issues", "MEDIUM", "IT"),
+            ("Network & VPN", "Wi-Fi connectivity, WireGuard VPN, firewall rules, and DNS resolution", "HIGH", "IT"),
+            ("Access & Permissions", "Active Directory, IAM roles, SSO login, and password resets", "HIGH", "SEC"),
+            ("Email & Collaboration", "Exchange email, Outlook, Slack channels, and MS Teams", "LOW", "IT"),
+            ("Facilities & Workspace", "Desk assignments, HVAC temperature, badge keycards, and physical repairs", "LOW", "FAC"),
+            ("HR & Payroll Support", "Benefits, direct deposit, employment verification, and leave requests", "LOW", "HR"),
+            ("Financial & Expenses", "Reimbursements, purchase orders, vendor billing, and corporate card", "MEDIUM", "FIN")
         ]
         categories_map = {}
-        for name, desc, prio, dept_code, icon in categories_data:
-            cat = TicketCategory(
-                name=name,
-                description=desc,
-                default_priority=prio,
-                default_department_id=depts_map[dept_code].id,
-                icon_name=icon
-            )
+        for name, desc, prio, dept_code in categories_data:
+            cat = TicketCategory(name=name, description=desc, default_priority=prio, default_department_id=depts_map[dept_code].id)
             db.add(cat)
             db.flush()
             categories_map[name] = cat
 
-        print("Seeding Users...")
-        pwd_hash = get_password_hash("Password123!")
+        print("Seeding Users and Employees...")
+        hashed_password = get_password_hash("Password123!")
 
-        # Admin user
-        admin = User(
-            employee_id="EMP-1000",
-            email="admin@ticketpro.internal",
-            hashed_password=pwd_hash,
-            full_name="Sarah Jenkins",
-            job_title="VP of Infrastructure & Security",
-            phone="+1 (555) 019-2831",
-            role_id=roles_map["ADMIN"].id,
-            role_name="ADMIN",
-            department_id=depts_map["IT"].id,
-            is_active=True
-        )
+        # System Admin
+        admin = User(employee_id="EMP-1000", email="admin@ticketpro.internal", hashed_password=hashed_password, full_name="Sarah Connor", job_title="VP of IT Operations", role_id=roles_map["ADMIN"].id, role_name="ADMIN", department_id=depts_map["IT"].id, is_active=True, is_verified=True)
         db.add(admin)
-        db.flush()
 
-        # Managers
-        mgr_it = User(employee_id="EMP-1001", email="it.manager@ticketpro.internal", hashed_password=pwd_hash, full_name="David Miller", job_title="IT Service Desk Manager", role_id=roles_map["MANAGER"].id, role_name="MANAGER", department_id=depts_map["IT"].id)
-        mgr_sec = User(employee_id="EMP-1002", email="sec.manager@ticketpro.internal", hashed_password=pwd_hash, full_name="Elena Rostova", job_title="Chief Information Security Officer", role_id=roles_map["MANAGER"].id, role_name="MANAGER", department_id=depts_map["SEC"].id)
-        db.add_all([mgr_it, mgr_sec])
-        db.flush()
-        depts_map["IT"].manager_id = mgr_it.id
-        depts_map["SEC"].manager_id = mgr_sec.id
+        # Department Managers
+        mgr_it = User(employee_id="EMP-1001", email="it.manager@ticketpro.internal", hashed_password=hashed_password, full_name="Marcus Vance", job_title="IT Operations Manager", role_id=roles_map["MANAGER"].id, role_name="MANAGER", department_id=depts_map["IT"].id, is_active=True, is_verified=True)
+        mgr_sec = User(employee_id="EMP-1002", email="sec.manager@ticketpro.internal", hashed_password=hashed_password, full_name="Elena Rostova", job_title="CISO & InfoSec Lead", role_id=roles_map["MANAGER"].id, role_name="MANAGER", department_id=depts_map["SEC"].id, is_active=True, is_verified=True)
+        mgr_hr = User(employee_id="EMP-1003", email="hr.manager@ticketpro.internal", hashed_password=hashed_password, full_name="Patricia Arquette", job_title="HR Operations Director", role_id=roles_map["MANAGER"].id, role_name="MANAGER", department_id=depts_map["HR"].id, is_active=True, is_verified=True)
+        db.add_all([mgr_it, mgr_sec, mgr_hr])
 
-        # Agents
-        agents = [
-            User(employee_id="EMP-1003", email="agent.alex@ticketpro.internal", hashed_password=pwd_hash, full_name="Alex Rivera", job_title="Senior IT Support Specialist", role_id=roles_map["AGENT"].id, role_name="AGENT", department_id=depts_map["IT"].id),
-            User(employee_id="EMP-1004", email="agent.jordan@ticketpro.internal", hashed_password=pwd_hash, full_name="Jordan Chen", job_title="Network & Systems Engineer", role_id=roles_map["AGENT"].id, role_name="AGENT", department_id=depts_map["IT"].id),
-            User(employee_id="EMP-1005", email="agent.priya@ticketpro.internal", hashed_password=pwd_hash, full_name="Priya Sharma", job_title="Cybersecurity Analyst", role_id=roles_map["AGENT"].id, role_name="AGENT", department_id=depts_map["SEC"].id),
-            User(employee_id="EMP-1006", email="agent.marcus@ticketpro.internal", hashed_password=pwd_hash, full_name="Marcus Vance", job_title="Hardware & Support Specialist", role_id=roles_map["AGENT"].id, role_name="AGENT", department_id=depts_map["IT"].id),
-            User(employee_id="EMP-1007", email="agent.sophia@ticketpro.internal", hashed_password=pwd_hash, full_name="Sophia Taylor", job_title="HR Operations Specialist", role_id=roles_map["AGENT"].id, role_name="AGENT", department_id=depts_map["HR"].id)
+        # Support Agents
+        agent_names = [
+            ("EMP-2001", "Alex Rivera", "Senior Systems Engineer", "agent.alex@ticketpro.internal", "IT"),
+            ("EMP-2002", "David Kim", "Network Operations Lead", "agent.david@ticketpro.internal", "IT"),
+            ("EMP-2003", "Rachel Chen", "Cybersecurity Specialist", "agent.rachel@ticketpro.internal", "SEC"),
+            ("EMP-2004", "James Thorne", "Helpdesk Specialist Tier 2", "agent.james@ticketpro.internal", "IT"),
+            ("EMP-2005", "Sophia Martinez", "Facilities Administrator", "agent.sophia@ticketpro.internal", "FAC")
         ]
-        db.add_all(agents)
-        db.flush()
+        agents = []
+        for emp_id, name, title, email, dept_code in agent_names:
+            u = User(employee_id=emp_id, email=email, hashed_password=hashed_password, full_name=name, job_title=title, role_id=roles_map["AGENT"].id, role_name="AGENT", department_id=depts_map[dept_code].id, is_active=True, is_verified=True)
+            db.add(u)
+            agents.append(u)
 
-        # Employees
+        # Standard Employees
+        emp_names = [
+            ("EMP-3001", "Brian O'Conner", "Senior Software Engineer", "brian.oconner@ticketpro.internal", "ENG"),
+            ("EMP-3002", "Mia Toretto", "Financial Analyst", "mia.toretto@ticketpro.internal", "FIN"),
+            ("EMP-3003", "Dominic Toretto", "Logistics Director", "dom.toretto@ticketpro.internal", "OPS"),
+            ("EMP-3004", "Letty Ortiz", "DevOps Engineer", "letty.ortiz@ticketpro.internal", "ENG"),
+            ("EMP-3005", "Han Lue", "Data Architect", "han.lue@ticketpro.internal", "ENG"),
+            ("EMP-3006", "Gisele Yashar", "Talent Acquisition Specialist", "gisele.yashar@ticketpro.internal", "HR"),
+            ("EMP-3007", "Roman Pearce", "Accounts Payable Lead", "roman.pearce@ticketpro.internal", "FIN"),
+            ("EMP-3008", "Tej Parker", "Principal Cloud Architect", "tej.parker@ticketpro.internal", "ENG")
+        ]
         employees = []
-        employee_names = [
-            ("Rohit Sharma", "Software Engineer", "ENG"),
-            ("Emily Watson", "Financial Analyst", "FIN"),
-            ("Michael Chang", "Product Manager", "OPS"),
-            ("Jessica Taylor", "UX Designer", "ENG"),
-            ("Daniel Kim", "Accountant", "FIN"),
-            ("Amanda Lopez", "HR Coordinator", "HR"),
-            ("James Wilson", "DevOps Engineer", "ENG"),
-            ("Rachel Green", "Marketing Lead", "OPS"),
-            ("Carlos Mendez", "Office Administrator", "FAC"),
-            ("Hannah Abbott", "QA Specialist", "ENG"),
-            ("Vikram Patel", "Data Scientist", "ENG"),
-            ("Samantha Reed", "Sales Executive", "OPS"),
-            ("Liam O'Connor", "SecOps Analyst", "SEC"),
-            ("Zoe Martinez", "Talent Acquisition", "HR"),
-            ("Oliver Wright", "Legal Counsel", "OPS")
-        ]
+        for emp_id, name, title, email, dept_code in emp_names:
+            u = User(employee_id=emp_id, email=email, hashed_password=hashed_password, full_name=name, job_title=title, role_id=roles_map["EMPLOYEE"].id, role_name="EMPLOYEE", department_id=depts_map[dept_code].id, is_active=True, is_verified=True)
+            db.add(u)
+            employees.append(u)
 
-        for idx, (name, title, dept_code) in enumerate(employee_names, start=8):
-            emp = User(
-                employee_id=f"EMP-10{idx:02d}",
-                email=f"{name.lower().replace(' ', '.')}@ticketpro.internal",
-                hashed_password=pwd_hash,
-                full_name=name,
-                job_title=title,
-                role_id=roles_map["EMPLOYEE"].id,
-                role_name="EMPLOYEE",
-                department_id=depts_map[dept_code].id
-            )
-            employees.append(emp)
-
-        db.add_all(employees)
         db.flush()
 
-        print("Seeding 100+ Enterprise Tickets...")
-        sample_ticket_titles = [
-            ("Unable to connect to Corporate VPN from remote location", "Network & VPN", "HIGH", "IT"),
-            ("MacBook Pro M3 battery draining rapidly during Zoom calls", "Hardware", "MEDIUM", "IT"),
-            ("Request AWS Admin Access for Staging Deployment", "Access & Permissions", "HIGH", "SEC"),
-            ("Suspicious Phishing Email received from unknown external domain", "Security Incident", "CRITICAL", "SEC"),
-            ("Docker Desktop license key expired on Windows Workstation", "Software", "MEDIUM", "IT"),
-            ("Monitors in Conference Room 4B not displaying HDMI output", "Facilities & Office", "LOW", "FAC"),
-            ("Direct Deposit bank account update for upcoming payroll cycle", "HR & Payroll", "MEDIUM", "HR"),
-            ("GitLab CI/CD runner timing out on release pipeline", "Software", "HIGH", "IT"),
-            ("Password reset required for SSO Active Directory account", "Email & Identity", "HIGH", "SEC"),
-            ("Standing desk height controller malfunctioning in Pod C", "Facilities & Office", "LOW", "FAC"),
-            ("VS Code remote SSH extension failing connection to dev server", "Software", "MEDIUM", "IT"),
-            ("Request 4K External Display for Graphic Design Workstation", "Hardware", "MEDIUM", "IT"),
-            ("Wi-Fi network disconnecting repeatedly on 5th Floor", "Network & VPN", "HIGH", "IT"),
-            ("Quarterly Tax Statement document download error in HR Portal", "HR & Payroll", "MEDIUM", "HR"),
-            ("Potential malware alert flagged on Endpoint Protection agent", "Security Incident", "CRITICAL", "SEC")
-        ]
+        print("Seeding Vendors and Licenses...")
+        v1 = Vendor(name="Apple Enterprise Direct", code="APPLE", contact_name="Tim Cook", contact_email="enterprise@apple.com", rating=4.9)
+        v2 = Vendor(name="Datadog APM & Monitoring", code="DATADOG", contact_name="Jason Miller", contact_email="support@datadog.com", rating=4.8)
+        db.add_all([v1, v2])
+        db.flush()
 
-        statuses = [TicketStatus.OPEN.value, TicketStatus.IN_PROGRESS.value, TicketStatus.WAITING_FOR_USER.value, TicketStatus.RESOLVED.value, TicketStatus.CLOSED.value]
-        now = datetime.now(timezone.utc)
+        lic1 = SoftwareLicense(vendor_id=v2.id, software_name="Datadog Infrastructure Monitoring", license_type="PER_USER", total_seats=100, allocated_seats=45, cost_per_seat=120.0)
+        db.add(lic1)
 
-        tickets_created = 0
-        for i in range(1, 105):
-            title_tpl, cat_name, prio, dept_code = sample_ticket_titles[i % len(sample_ticket_titles)]
-            req_user = employees[i % len(employees)]
-            assigned_agent = agents[i % len(agents)] if i % 4 != 0 else None
-            status_val = statuses[i % len(statuses)]
-            
-            created_days_ago = (105 - i) // 4
-            created_at = now - timedelta(days=created_days_ago, hours=(i % 12))
-            resp_due = created_at + timedelta(minutes=30)
-            res_due = created_at + timedelta(hours=4)
+        print("Seeding Assets...")
+        ast1 = Asset(asset_tag="AST-2026-001", name="MacBook Pro 16 M3 Max", category="HARDWARE", model_number="MBP-16", serial_number="C02XG011MD6R", status="IN_USE", purchase_cost=3499.0, assigned_to_user_id=admin.id, department_id=depts_map["IT"].id)
+        ast2 = Asset(asset_tag="AST-2026-002", name="Dell UltraSharp 32 4K Monitor", category="HARDWARE", model_number="U3223QE", serial_number="CN098123456", status="IN_STOCK", purchase_cost=899.0, department_id=depts_map["IT"].id)
+        db.add_all([ast1, ast2])
 
-            is_ovd = True if (i % 9 == 0 and status_val not in [TicketStatus.RESOLVED.value, TicketStatus.CLOSED.value]) else False
+        print("Seeding Service Catalog...")
+        cat1 = ServiceCatalogCategory(name="Hardware Requests", description="Request new workstations, monitors, and devices", icon_name="Laptop")
+        db.add(cat1)
+        db.flush()
 
-            ticket = Ticket(
-                ticket_number=f"TKT-2026-{1000 + i}",
-                title=f"{title_tpl} (#{i})",
-                description=f"Detailed support request for {title_tpl}. Requester reports persistent issue affecting workflow. Step-by-step reproduction and logs attached.",
-                category_id=categories_map[cat_name].id,
-                priority=prio,
-                status=status_val,
-                requester_id=req_user.id,
-                assigned_agent_id=assigned_agent.id if assigned_agent else None,
-                department_id=depts_map[dept_code].id,
-                first_response_due_at=resp_due,
-                resolution_due_at=res_due,
-                is_overdue=is_ovd,
-                created_at=created_at,
-                updated_at=created_at + timedelta(hours=1)
-            )
-            db.add(ticket)
-            db.flush()
+        item1 = ServiceCatalogItem(category_id=cat1.id, name="Developer Workstation Pro", short_description="Apple MacBook Pro 16 or Dell XPS 15", estimated_fulfillment_hours=48.0, requires_approval=True, cost=2500.0)
+        db.add(item1)
 
-            # Public comment
-            comment = TicketComment(
-                ticket_id=ticket.id,
-                author_id=assigned_agent.id if assigned_agent else mgr_it.id,
-                content=f"Hello {req_user.full_name}, thank you for submitting this request. Our engineering team is currently investigating your ticket.",
-                is_internal_note=False,
-                created_at=created_at + timedelta(minutes=15)
-            )
-            db.add(comment)
-
-            # Internal note (Agent only)
-            if i % 2 == 0 and assigned_agent:
-                internal_note = TicketComment(
-                    ticket_id=ticket.id,
-                    author_id=assigned_agent.id,
-                    content=f"INTERNAL NOTE: Checked backend logs. Diagnostic trace indicates potential DNS cache delay. Escalating to Tier 2 if unresolved.",
-                    is_internal_note=True,
-                    created_at=created_at + timedelta(minutes=25)
-                )
-                db.add(internal_note)
-
-            tickets_created += 1
+        print("Seeding Change Requests & Problems...")
+        chg1 = ChangeRequest(change_number="CHG-2026-1001", title="Upgrade Core Switch Stack Firmware", description="Apply emergency security patch CVE-2026-8910", reason_for_change="Fix core switch buffer leak", impact_analysis="15 min brief network drop", rollback_plan="Revert to v3.1 image", category="INFRASTRUCTURE", risk_level="MEDIUM", status="APPROVED", requester_id=admin.id)
+        prb1 = Problem(problem_number="PRB-2026-1001", title="Intermittent Database Connection Pool Timeout", description="Spikes in active DB connections exhaust pool under heavy loads", status="INVESTIGATING", impact="HIGH", owner_id=admin.id)
+        db.add_all([chg1, prb1])
 
         print("Seeding Announcements...")
+        now = datetime.now(timezone.utc)
         announcements = [
             Announcement(title="Scheduled System Maintenance: Active Directory & SSO Services", content="Please be advised that core authentication services will undergo scheduled maintenance on Saturday between 02:00 AM and 04:00 AM UTC. Single Sign-On may experience brief intermittent drops.", priority=AnnouncementPriority.IMPORTANT.value, target_audience="ALL", status=AnnouncementStatus.PUBLISHED.value, author_id=admin.id, published_at=now - timedelta(days=2)),
-            Announcement(title="Updated IT Remote Work Security Policy 2026", content="All corporate laptops must update to Endpoint Protection Agent v5.4 before Sept 15. Compliance guidelines and download instructions are published in the Knowledge Base.", priority=AnnouncementPriority.NORMAL.value, target_audience="ALL", status=AnnouncementStatus.PUBLISHED.value, author_id=mgr_sec.id, published_at=now - timedelta(days=5)),
-            Announcement(title="Upcoming Holiday IT Support Schedule", content="Over the upcoming bank holiday weekend, Tier 1 live chat support will operate on reduced hours (09:00 - 17:00). Critical Incident on-call engineers remain active 24/7.", priority=AnnouncementPriority.NORMAL.value, target_audience="ALL", status=AnnouncementStatus.PUBLISHED.value, author_id=mgr_it.id, published_at=now - timedelta(days=7))
+            Announcement(title="Updated IT Remote Work Security Policy 2026", content="All corporate laptops must update to Endpoint Protection Agent v5.4 before Sept 15. Compliance guidelines and download instructions are published in the Knowledge Base.", priority=AnnouncementPriority.NORMAL.value, target_audience="ALL", status=AnnouncementStatus.PUBLISHED.value, author_id=mgr_sec.id, published_at=now - timedelta(days=5))
         ]
         db.add_all(announcements)
 
-        print("Seeding Knowledge Base Articles...")
-        kb_articles = [
-            KnowledgeBaseArticle(title="How to Connect to Corporate VPN via WireGuard Client", slug="connect-corporate-vpn-wireguard", category_id=categories_map["Network & VPN"].id, content="## Overview\nThis guide explains how to configure and connect to the secure corporate VPN.\n\n### Step 1: Install WireGuard\nDownload the official client for Windows or macOS.\n\n### Step 2: Import Configuration\nRequest your `.conf` key profile via TicketPro or download from the Security Portal.\n\n### Step 3: Connect\nClick Activate. Authenticate using MFA when prompted.", author_id=agents[1].id, status="PUBLISHED", view_count=342, helpful_count=48, unhelpful_count=2, tags="vpn,network,wireguard,remote"),
-            KnowledgeBaseArticle(title="Troubleshooting macOS Wi-Fi Certificate Renewal Errors", slug="troubleshooting-macos-wifi-certificate", category_id=categories_map["Network & VPN"].id, content="If your Mac repeatedly prompts for Wi-Fi credentials or fails WPA2-Enterprise handshake, clear your Keychain certificate cache:\n1. Open Keychain Access\n2. Delete expired 'TicketPro-Corporate-WiFi' certs\n3. Reboot and reconnect.", author_id=agents[0].id, status="PUBLISHED", view_count=189, helpful_count=29, unhelpful_count=1, tags="wifi,macbook,certificate,keychain"),
-            KnowledgeBaseArticle(title="Requesting AWS Staging Account IAM Roles & Access Keys", slug="requesting-aws-staging-iam-access", category_id=categories_map["Access & Permissions"].id, content="Engineering and DevOps team members can request developer access to AWS Staging environments by filing an Access Ticket in TicketPro. Approvals require Engineering Manager sign-off.", author_id=agents[2].id, status="PUBLISHED", view_count=521, helpful_count=84, unhelpful_count=3, tags="aws,iam,cloud,access,permissions")
-        ]
-        db.add_all(kb_articles)
-
-        print("Seeding System Settings and Integrations...")
+        print("Seeding System Settings...")
         settings = [
             SystemSetting(key="org_name", value="TicketPro Enterprise Corp", category="general"),
             SystemSetting(key="default_sla_hours", value="4", category="sla"),
             SystemSetting(key="auto_assign_enabled", value="true", category="routing")
         ]
-        integrations = [
-            Integration(name="Slack IT Operations Webhook", type="SLACK", config_json='{"webhook_url": "https://hooks.slack.com/services/mock", "channel": "#it-alerts"}', is_active=True),
-            Integration(name="Microsoft Teams Incident Channel", type="TEAMS", config_json='{"webhook_url": "https://outlook.office.com/webhook/mock"}', is_active=False)
-        ]
-        db.add_all(settings + integrations)
+        db.add_all(settings)
 
         db.commit()
-        print(f"Successfully seeded database with {tickets_created} tickets, 20+ users, departments, SLA policies, and KB articles!")
+        print("Successfully seeded database with Users, ITIL Assets, Change Requests, Problems, Service Catalog, and System Settings!")
 
     except Exception as e:
         db.rollback()

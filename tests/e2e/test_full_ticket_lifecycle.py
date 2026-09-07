@@ -6,12 +6,16 @@ from fastapi.testclient import TestClient
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..', 'backend')))
 from app.main import app
 
+import uuid
+
 def test_full_end_to_end_ticket_lifecycle():
     client = TestClient(app)
 
+    unique_email = f"e2e.{uuid.uuid4().hex[:6]}@ticketpro.internal"
+
     # 1. Register Employee
     reg_resp = client.post("/api/v1/auth/register", json={
-        "email": "e2e.employee@ticketpro.internal",
+        "email": unique_email,
         "password": "Password123!",
         "full_name": "E2E Employee",
         "job_title": "QA Engineer"
@@ -21,7 +25,7 @@ def test_full_end_to_end_ticket_lifecycle():
 
     # 2. Login Employee
     login_resp = client.post("/api/v1/auth/login", json={
-        "email": "e2e.employee@ticketpro.internal",
+        "email": unique_email,
         "password": "Password123!"
     })
     assert login_resp.status_code == 200

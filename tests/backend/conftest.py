@@ -92,3 +92,24 @@ def client(db):
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def admin_token_headers(client):
+    login_resp = client.post("/api/v1/auth/login", json={
+        "email": "admin.test@ticketpro.internal",
+        "password": "TestPassword123!"
+    })
+    token = login_resp.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def employee_token_headers(client):
+    login_resp = client.post("/api/v1/auth/login", json={
+        "email": "employee.test@ticketpro.internal",
+        "password": "TestPassword123!"
+    })
+    token = login_resp.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+

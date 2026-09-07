@@ -15,6 +15,17 @@ import { SLAManagementPage } from './features/sla/SLAManagementPage';
 import { AnalyticsPage } from './features/analytics/AnalyticsPage';
 import { AuditLogPage } from './features/audit/AuditLogPage';
 import { SettingsPage } from './features/settings/SettingsPage';
+import { AssetListPage } from './features/assets/AssetListPage';
+import { ChangeRequestListPage } from './features/change-requests/ChangeRequestListPage';
+import { ProblemListPage } from './features/problems/ProblemListPage';
+import { SurveyListPage } from './features/surveys/SurveyListPage';
+import { TimeTrackingPage } from './features/time-tracking/TimeTrackingPage';
+import { VendorListPage } from './features/vendors/VendorListPage';
+import { ContractListPage } from './features/contracts/ContractListPage';
+import { OnCallPage } from './features/on-call/OnCallPage';
+import { ServiceCatalogPage } from './features/service-catalog/ServiceCatalogPage';
+import { CustomFieldsPage } from './features/custom-fields/CustomFieldsPage';
+import { EmailTemplatesPage } from './features/email-templates/EmailTemplatesPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isLoading } = useAuth();
@@ -38,6 +49,18 @@ export const App: React.FC = () => {
           <Route path="/employees" element={<ProtectedRoute><EmployeeListPage /></ProtectedRoute>} />
           <Route path="/departments" element={<ProtectedRoute><DepartmentListPage /></ProtectedRoute>} />
           <Route path="/roles" element={<ProtectedRoute><EmployeeListPage /></ProtectedRoute>} />
+
+          <Route path="/assets" element={<ProtectedRoute><AssetListPage /></ProtectedRoute>} />
+          <Route path="/change-requests" element={<ProtectedRoute><ChangeRequestListPage /></ProtectedRoute>} />
+          <Route path="/problems" element={<ProtectedRoute><ProblemListPage /></ProtectedRoute>} />
+          <Route path="/surveys" element={<ProtectedRoute><SurveyListPage /></ProtectedRoute>} />
+          <Route path="/time-tracking" element={<ProtectedRoute><TimeTrackingPage /></ProtectedRoute>} />
+          <Route path="/vendors" element={<ProtectedRoute><VendorListPage /></ProtectedRoute>} />
+          <Route path="/contracts" element={<ProtectedRoute><ContractListPage /></ProtectedRoute>} />
+          <Route path="/on-call" element={<ProtectedRoute><OnCallPage /></ProtectedRoute>} />
+          <Route path="/service-catalog" element={<ProtectedRoute><ServiceCatalogPage /></ProtectedRoute>} />
+          <Route path="/custom-fields" element={<ProtectedRoute><CustomFieldsPage /></ProtectedRoute>} />
+          <Route path="/email-templates" element={<ProtectedRoute><EmailTemplatesPage /></ProtectedRoute>} />
 
           <Route path="/approvals" element={<ProtectedRoute><ApprovalListPage /></ProtectedRoute>} />
           <Route path="/announcements" element={<ProtectedRoute><AnnouncementListPage /></ProtectedRoute>} />

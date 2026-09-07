@@ -1,0 +1,12 @@
+{
+  "name": "ticketpro-monorepo",
+  "version": "1.0.0",
+  "description": "TicketPro Employee Ticket Management & IT Service Operations Platform Monorepo",
+  "private": true,
+  "scripts": {
+    "start": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "test": "cd frontend && npm test",
+    "typecheck": "cd frontend && npm run typecheck"
+  }
+}

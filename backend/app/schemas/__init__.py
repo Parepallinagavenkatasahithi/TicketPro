@@ -11,10 +11,17 @@ from app.schemas.sla import SLAPolicyOut, SLAPolicyCreate, SLAPolicyUpdate, SLAB
 from app.schemas.approval import ApprovalRequestCreate, ApprovalRequestOut, ApprovalDecisionRequest
 from app.schemas.announcement import AnnouncementCreate, AnnouncementUpdate, AnnouncementOut
 from app.schemas.notification import NotificationOut
-from app.schemas.knowledge_base import ArticleCreate, ArticleUpdate, ArticleOut, ArticleFeedback
-from app.schemas.analytics import DashboardMetrics, TicketTrendPoint, PriorityDistribution
-from app.schemas.audit import AuditLogOut
-from app.schemas.system import SystemSettingOut, IntegrationOut
+from app.schemas.asset import AssetOut, AssetCreate, AssetUpdate
+from app.schemas.change_request import ChangeRequestOut, ChangeRequestCreate, ChangeRequestStatusUpdate
+from app.schemas.problem import ProblemOut, ProblemCreate, ProblemUpdate
+from app.schemas.survey import SurveyOut, SurveyCreate
+from app.schemas.time_tracking import TimeEntryOut, TimeEntryCreate
+from app.schemas.vendor import VendorOut, VendorCreate, VendorUpdate, SoftwareLicenseOut, SoftwareLicenseCreate
+from app.schemas.contract import ContractOut, ContractCreate
+from app.schemas.on_call import OnCallRotationOut, OnCallRotationCreate, OnCallShiftOut, OnCallShiftCreate
+from app.schemas.service_catalog import ServiceCatalogCategoryOut, ServiceCatalogCategoryCreate, ServiceCatalogItemOut, ServiceCatalogItemCreate
+from app.schemas.custom_field import CustomFieldOut, CustomFieldCreate, CustomFieldValueOut, CustomFieldValueCreate
+from app.schemas.email_template import EmailTemplateOut, EmailTemplateCreate
 
 __all__ = [
     "LoginRequest", "TokenResponse", "UserRegister", "PasswordResetRequest", "PasswordResetConfirm",
@@ -31,5 +38,16 @@ __all__ = [
     "ArticleCreate", "ArticleUpdate", "ArticleOut", "ArticleFeedback",
     "DashboardMetrics", "TicketTrendPoint", "PriorityDistribution",
     "AuditLogOut",
-    "SystemSettingOut", "IntegrationOut"
+    "SystemSettingOut", "IntegrationOut",
+    "AssetOut", "AssetCreate", "AssetUpdate",
+    "ChangeRequestOut", "ChangeRequestCreate", "ChangeRequestStatusUpdate",
+    "ProblemOut", "ProblemCreate", "ProblemUpdate",
+    "SurveyOut", "SurveyCreate",
+    "TimeEntryOut", "TimeEntryCreate",
+    "VendorOut", "VendorCreate", "VendorUpdate", "SoftwareLicenseOut", "SoftwareLicenseCreate",
+    "ContractOut", "ContractCreate",
+    "OnCallRotationOut", "OnCallRotationCreate", "OnCallShiftOut", "OnCallShiftCreate",
+    "ServiceCatalogCategoryOut", "ServiceCatalogCategoryCreate", "ServiceCatalogItemOut", "ServiceCatalogItemCreate",
+    "CustomFieldOut", "CustomFieldCreate", "CustomFieldValueOut", "CustomFieldValueCreate",
+    "EmailTemplateOut", "EmailTemplateCreate"
 ]

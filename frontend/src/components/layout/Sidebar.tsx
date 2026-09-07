@@ -32,6 +32,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse, o
     { label: 'Roles & Permissions', path: '/roles', icon: ShieldCheck, permission: 'settings.manage' },
   ];
 
+  const itilNav = [
+    { label: 'Asset Management', path: '/assets', icon: HardDrive, permission: 'ticket.view' },
+    { label: 'Change Management', path: '/change-requests', icon: Layers, permission: 'ticket.view' },
+    { label: 'Problem Management', path: '/problems', icon: ShieldCheck, permission: 'ticket.view' },
+    { label: 'CSAT Ratings', path: '/surveys', icon: BarChart3, permission: 'ticket.view' },
+    { label: 'Time Tracking', path: '/time-tracking', icon: Clock, permission: 'ticket.view' },
+    { label: 'Vendors & SaaS', path: '/vendors', icon: Building2, permission: 'ticket.view' },
+    { label: 'Support Contracts', path: '/contracts', icon: FileText, permission: 'ticket.view' },
+    { label: 'On-Call Roster', path: '/on-call', icon: Users, permission: 'ticket.view' },
+    { label: 'Service Catalog', path: '/service-catalog', icon: PlusCircle, permission: 'ticket.view' },
+    { label: 'Custom Fields', path: '/custom-fields', icon: Settings, permission: 'settings.manage' },
+    { label: 'Email Templates', path: '/email-templates', icon: Megaphone, permission: 'settings.manage' },
+  ];
+
   const systemNav = [
     { label: 'Reports & Analytics', path: '/analytics', icon: BarChart3, permission: 'reports.view' },
     { label: 'Knowledge Base', path: '/knowledge-base', icon: BookOpen, permission: 'kb.view' },
@@ -117,6 +131,36 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse, o
               )}
               <div className="space-y-1">
                 {managementNav.filter(item => hasPermission(item.permission)).map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    className={({ isActive }) =>
+                      cn(
+                        'flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                        isActive
+                          ? 'bg-brand-50 text-brand-600 font-semibold'
+                          : 'text-text-secondary hover:bg-surface-subtle hover:text-text-primary'
+                      )
+                    }
+                  >
+                    <item.icon className="w-5 h-5 flex-shrink-0" />
+                    {!collapsed && <span>{item.label}</span>}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ITIL Operations Group */}
+          {itilNav.some(i => hasPermission(i.permission)) && (
+            <div>
+              {!collapsed && (
+                <div className="px-3 text-[11px] font-bold uppercase tracking-wider text-text-tertiary mb-2">
+                  ITIL Operations
+                </div>
+              )}
+              <div className="space-y-1">
+                {itilNav.filter(item => hasPermission(item.permission)).map((item) => (
                   <NavLink
                     key={item.path}
                     to={item.path}
