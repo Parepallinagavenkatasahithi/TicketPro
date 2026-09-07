@@ -1,166 +1,238 @@
 import os
+import sys
 
-def create_file(path, content):
+def write_file(path, content):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'w', encoding='utf-8') as f:
         f.write(content.strip() + '\n')
-    print(f"Created {path}")
+    print(f"Generated: {path}")
 
-def generate_backend_models():
-    # Asset model
-    asset_model = """
-from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, Float
-from sqlalchemy.orm import relationship
-from app.core.database import Base
+def generate_frontend_ui_components():
+    # 1. KanbanBoard.tsx
+    write_file("frontend/src/components/ui/KanbanBoard.tsx", '''
+import React from 'react';
+import { Ticket, TicketStatusType } from '../../types';
+import { TicketStatusBadge } from './TicketStatusBadge';
+import { PriorityBadge } from './PriorityBadge';
+import { Clock, User } from 'lucide-react';
 
-class Asset(Base):
-    __tablename__ = "assets"
+interface KanbanColumn {
+  id: TicketStatusType;
+  title: string;
+}
 
-    id = Column(Integer, primary_key=True, index=True)
-    asset_tag = Column(String(50), unique=True, nullable=False, index=True)
-    name = Column(String(150), nullable=False)
-    category = Column(String(50), nullable=False) # LAPTOP, DESKTOP, SERVER, MONITOR, PRINTER, NETWORK, OTHER
-    model_number = Column(String(100), nullable=True)
-    serial_number = Column(String(100), unique=True, nullable=True)
-    status = Column(String(30), default="IN_USE") # IN_USE, IN_STOCK, UNDER_REPAIR, RETIRED, LOST
-    
-    assigned_to_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
-    location = Column(String(100), nullable=True)
-    
-    purchase_date = Column(DateTime(timezone=True), nullable=True)
-    warranty_expiry_date = Column(DateTime(timezone=True), nullable=True)
-    purchase_cost = Column(Float, nullable=True)
-    vendor_name = Column(String(100), nullable=True)
-    notes = Column(Text, nullable=True)
-    
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+interface KanbanBoardProps {
+  tickets: Ticket[];
+  onTicketClick?: (ticket: Ticket) => void;
+}
 
-    assigned_user = relationship("User", foreign_keys=[assigned_to_user_id])
-    department = relationship("Department", foreign_keys=[department_id])
-"""
-    create_file("backend/app/models/asset.py", asset_model)
+const COLUMNS: KanbanColumn[] = [
+  { id: 'NEW', title: 'New Submissions' },
+  { id: 'OPEN', title: 'Open Queue' },
+  { id: 'IN_PROGRESS', title: 'In Progress' },
+  { id: 'WAITING_FOR_USER', title: 'Waiting on User' },
+  { id: 'RESOLVED', title: 'Resolved' }
+];
 
-    # Change Request model
-    change_model = """
-from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
-from app.core.database import Base
+export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tickets, onTicketClick }) => {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 overflow-x-auto pb-4">
+      {COLUMNS.map((col) => {
+        const colTickets = tickets.filter((t) => t.status === col.id);
+        return (
+          <div key={col.id} className="bg-slate-100 dark:bg-slate-900/60 rounded-xl p-3 flex flex-col min-h-[500px]">
+            <div className="flex items-center justify-between mb-3 px-1">
+              <h3 className="font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                {col.title}
+              </h3>
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                {colTickets.length}
+              </span>
+            </div>
 
-class ChangeRequest(Base):
-    __tablename__ = "change_requests"
+            <div className="space-y-2.5 flex-1 overflow-y-auto">
+              {colTickets.map((ticket) => (
+                <div
+                  key={ticket.id}
+                  onClick={() => onTicketClick && onTicketClick(ticket)}
+                  className="bg-white dark:bg-slate-800 p-3.5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700/80 hover:shadow-md transition-all cursor-pointer space-y-2"
+                >
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                      {ticket.ticket_number}
+                    </span>
+                    <PriorityBadge priority={ticket.priority} />
+                  </div>
 
-    id = Column(Integer, primary_key=True, index=True)
-    change_number = Column(String(50), unique=True, nullable=False, index=True) # CHG-2026-1001
-    title = Column(String(255), nullable=False)
-    description = Column(Text, nullable=False)
-    reason_for_change = Column(Text, nullable=False)
-    impact_analysis = Column(Text, nullable=False)
-    rollback_plan = Column(Text, nullable=False)
-    
-    category = Column(String(50), default="STANDARD") # STANDARD, NORMAL, EMERGENCY
-    risk_level = Column(String(20), default="MEDIUM") # LOW, MEDIUM, HIGH, CRITICAL
-    status = Column(String(30), default="DRAFT") # DRAFT, PENDING_APPROVAL, APPROVED, SCHEDULED, IN_PROGRESS, COMPLETED, REJECTED, CANCELLED
-    
-    requester_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    assigned_cab_lead_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    
-    scheduled_start_at = Column(DateTime(timezone=True), nullable=True)
-    scheduled_end_at = Column(DateTime(timezone=True), nullable=True)
-    actual_start_at = Column(DateTime(timezone=True), nullable=True)
-    actual_end_at = Column(DateTime(timezone=True), nullable=True)
-    
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+                  <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100 line-clamp-2 leading-snug">
+                    {ticket.title}
+                  </h4>
 
-    requester = relationship("User", foreign_keys=[requester_id])
-    cab_lead = relationship("User", foreign_keys=[assigned_cab_lead_id])
-"""
-    create_file("backend/app/models/change_request.py", change_model)
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-between text-xs text-slate-500">
+                    <span className="flex items-center gap-1">
+                      <User className="h-3 w-3" />
+                      {ticket.assigned_agent_name || 'Unassigned'}
+                    </span>
+                    <span className="flex items-center gap-1 text-[11px]">
+                      <Clock className="h-3 w-3" />
+                      {new Date(ticket.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+''')
 
-    # Problem model
-    problem_model = """
-from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
-from app.core.database import Base
+    # 2. WorkflowStepper.tsx
+    write_file("frontend/src/components/ui/WorkflowStepper.tsx", '''
+import React from 'react';
+import { CheckCircle2, Circle } from 'lucide-react';
 
-class Problem(Base):
-    __tablename__ = "problems"
+export interface StepItem {
+  id: string;
+  label: string;
+  description?: string;
+}
 
-    id = Column(Integer, primary_key=True, index=True)
-    problem_number = Column(String(50), unique=True, nullable=False, index=True) # PRB-2026-1001
-    title = Column(String(255), nullable=False)
-    description = Column(Text, nullable=False)
-    root_cause = Column(Text, nullable=True)
-    workaround = Column(Text, nullable=True)
-    
-    status = Column(String(30), default="INVESTIGATING") # LOGGED, INVESTIGATING, KNOWN_ERROR, RESOLVED, CLOSED
-    impact = Column(String(20), default="MEDIUM") # LOW, MEDIUM, HIGH, CRITICAL
-    
-    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
-    
-    resolved_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+interface WorkflowStepperProps {
+  steps: StepItem[];
+  currentStepIndex: number;
+}
 
-    owner = relationship("User", foreign_keys=[owner_id])
-    department = relationship("Department", foreign_keys=[department_id])
-"""
-    create_file("backend/app/models/problem.py", problem_model)
+export const WorkflowStepper: React.FC<WorkflowStepperProps> = ({ steps, currentStepIndex }) => {
+  return (
+    <div className="w-full py-4">
+      <div className="flex items-center justify-between relative">
+        {steps.map((step, idx) => {
+          const isCompleted = idx < currentStepIndex;
+          const isCurrent = idx === currentStepIndex;
 
-    # Survey model
-    survey_model = """
-from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
-from app.core.database import Base
+          return (
+            <div key={step.id} className="flex-1 flex flex-col items-center relative z-10">
+              <div
+                className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs transition-colors ${
+                  isCompleted
+                    ? 'bg-emerald-600 text-white'
+                    : isCurrent
+                    ? 'bg-indigo-600 text-white ring-4 ring-indigo-100 dark:ring-indigo-950'
+                    : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
+                }`}
+              >
+                {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : idx + 1}
+              </div>
+              <span className={`mt-2 text-xs font-medium text-center ${isCurrent ? 'text-indigo-600 font-bold' : 'text-slate-600'}`}>
+                {step.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+''')
 
-class SurveyResponse(Base):
-    __tablename__ = "survey_responses"
+    # 3. FilterBuilder.tsx
+    write_file("frontend/src/components/ui/FilterBuilder.tsx", '''
+import React, { useState } from 'react';
+import { Filter, X, RefreshCw } from 'lucide-react';
 
-    id = Column(Integer, primary_key=True, index=True)
-    ticket_id = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False, index=True)
-    respondent_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    rating = Column(Integer, nullable=False) # 1 to 5 stars
-    feedback_text = Column(Text, nullable=True)
-    
-    agent_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+export interface FilterCriterion {
+  field: string;
+  operator: 'equals' | 'contains' | 'in' | 'greater_than';
+  value: string;
+}
 
-    ticket = relationship("Ticket")
-    respondent = relationship("User", foreign_keys=[respondent_id])
-    agent = relationship("User", foreign_keys=[agent_id])
-"""
-    create_file("backend/app/models/survey.py", survey_model)
+interface FilterBuilderProps {
+  onApplyFilters: (filters: FilterCriterion[]) => void;
+}
 
-    # Time tracking model
-    time_model = """
-from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float
-from sqlalchemy.orm import relationship
-from app.core.database import Base
+export const FilterBuilder: React.FC<FilterBuilderProps> = ({ onApplyFilters }) => {
+  const [criteria, setCriteria] = useState<FilterCriterion[]>([
+    { field: 'status', operator: 'equals', value: '' }
+  ]);
 
-class TimeEntry(Base):
-    __tablename__ = "time_entries"
+  const addCriterion = () => {
+    setCriteria([...criteria, { field: 'priority', operator: 'equals', value: '' }]);
+  };
 
-    id = Column(Integer, primary_key=True, index=True)
-    ticket_id = Column(Integer, ForeignKey("tickets.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    hours_spent = Column(Float, nullable=False)
-    activity_type = Column(String(50), default="RESEARCH") # RESEARCH, TROUBLESHOOTING, COMMUNICATION, REPAIR, DEPLOYMENT
-    description = Column(Text, nullable=True)
-    
-    logged_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+  const removeCriterion = (idx: number) => {
+    setCriteria(criteria.filter((_, i) => i !== idx));
+  };
 
-    ticket = relationship("Ticket")
-    user = relationship("User")
-"""
-    create_file("backend/app/models/time_tracking.py", time_model)
+  return (
+    <div className="bg-slate-50 dark:bg-slate-900/80 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3">
+      <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+        <span className="flex items-center gap-1.5"><Filter className="h-4 w-4 text-indigo-600" /> Advanced Filter Criteria</span>
+        <button onClick={addCriterion} className="text-indigo-600 hover:underline">+ Add Condition</button>
+      </div>
+
+      <div className="space-y-2">
+        {criteria.map((item, idx) => (
+          <div key={idx} className="flex items-center gap-2 text-xs">
+            <select
+              value={item.field}
+              onChange={(e) => {
+                const next = [...criteria];
+                next[idx].field = e.target.value;
+                setCriteria(next);
+              }}
+              className="p-2 rounded-lg border dark:bg-slate-800 dark:border-slate-700"
+            >
+              <option value="status">Status</option>
+              <option value="priority">Priority</option>
+              <option value="category">Category</option>
+              <option value="department">Department</option>
+            </select>
+
+            <select
+              value={item.operator}
+              onChange={(e) => {
+                const next = [...criteria];
+                next[idx].operator = e.target.value as any;
+                setCriteria(next);
+              }}
+              className="p-2 rounded-lg border dark:bg-slate-800 dark:border-slate-700"
+            >
+              <option value="equals">Equals</option>
+              <option value="contains">Contains</option>
+              <option value="in">In List</option>
+            </select>
+
+            <input
+              type="text"
+              placeholder="Value..."
+              value={item.value}
+              onChange={(e) => {
+                const next = [...criteria];
+                next[idx].value = e.target.value;
+                setCriteria(next);
+              }}
+              className="flex-1 p-2 rounded-lg border dark:bg-slate-800 dark:border-slate-700"
+            />
+
+            <button onClick={() => removeCriterion(idx)} className="p-1 text-slate-400 hover:text-rose-600">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex justify-end gap-2 pt-2">
+        <button onClick={() => onApplyFilters(criteria)} className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-medium text-xs">
+          Apply Filters
+        </button>
+      </div>
+    </div>
+  );
+};
+''')
 
 if __name__ == "__main__":
-    generate_backend_models()
+    generate_frontend_ui_components()
