@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     ]
 
     # Database
-    DATABASE_URL: str = "sqlite:///./ticketpro.db"
+    DATABASE_URL: str = f"sqlite:///{os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'ticketpro.db')}"
 
     # Storage
     UPLOAD_DIR: str = "storage/uploads"
