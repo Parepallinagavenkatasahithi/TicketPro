@@ -1,23 +1,21 @@
 import os
 import sys
 import subprocess
-import glob
 
 def count_lines_and_files(directory, extensions):
     total_loc = 0
     total_files = 0
     
-    for root, _, files in os.walk(directory):
-        if 'node_modules' in root or '__pycache__' in root or '.git' in root or 'dist' in root or 'venv' in root:
-            continue
+    for root, dirs, files in os.walk(directory):
+        dirs[:] = [d for d in dirs if d not in ('node_modules', '__pycache__', '.git', 'dist', 'venv', 'coverage', '.pytest_cache')]
         for file in files:
             ext = os.path.splitext(file)[1]
             if ext in extensions:
                 file_path = os.path.join(root, file)
                 try:
-                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                        lines = f.readlines()
-                        total_loc += len(lines)
+                    with open(file_path, 'rb') as f:
+                        lines = f.read().count(b'\n') + 1
+                        total_loc += lines
                         total_files += 1
                 except Exception:
                     pass
@@ -27,6 +25,7 @@ def audit_project():
     print("=" * 60)
     print("TICKETPRO — AUTOMATED PROJECT AUDIT REPORT")
     print("=" * 60)
+    sys.stdout.flush()
     
     # 1. Measure Production LOC & Files
     prod_extensions = ['.py', '.ts', '.tsx', '.js', '.jsx']
@@ -41,10 +40,10 @@ def audit_project():
     
     # 3. Check Git commits
     try:
-        commit_output = subprocess.check_output(['git', 'rev-list', '--count', 'HEAD']).decode().strip()
+        commit_output = subprocess.check_output(['git', 'rev-list', '--count', 'HEAD'], stderr=subprocess.DEVNULL).decode().strip()
         commit_count = int(commit_output)
     except Exception:
-        commit_count = 15
+        commit_count = 0
         
     # 4. Check Secrets & License
     has_env = os.path.exists('.env')
@@ -63,6 +62,7 @@ def audit_project():
     print(f"CI/CD Workflow:        {'PASS' if has_ci else 'FAIL'}")
     print(f"README Present:        {'PASS' if has_readme else 'FAIL'}")
     print("=" * 60)
+    sys.stdout.flush()
     
     return {
         "prod_loc": total_prod_loc,
