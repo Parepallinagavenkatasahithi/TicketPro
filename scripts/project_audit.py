@@ -38,12 +38,14 @@ def audit_project():
     # 2. Measure Test Files
     test_loc, test_files = count_lines_and_files('tests', ['.py', '.ts', '.tsx'])
     
-    # 3. Check Git commits
+    # 3. Check Git commits and merged PRs
     try:
-        commit_output = subprocess.check_output(['git', 'rev-list', '--count', 'HEAD'], stderr=subprocess.DEVNULL).decode().strip()
-        commit_count = int(commit_output)
+        git_log = subprocess.check_output(['git', 'log', '--oneline'], stderr=subprocess.DEVNULL, text=True).splitlines()
+        commit_count = len(git_log)
+        pr_count = sum(1 for line in git_log if "Merge pull request" in line)
     except Exception:
         commit_count = 0
+        pr_count = 0
         
     # 4. Check Secrets & License
     has_env = os.path.exists('.env')
@@ -56,6 +58,7 @@ def audit_project():
     print(f"Production Files:      {total_prod_files}")
     print(f"Test Specification Files: {test_files}")
     print(f"Git Commits Count:     {commit_count}")
+    print(f"Merged PRs Count:      {pr_count}")
     print(f"Committed .env File:   {'FAIL (Found .env)' if has_env else 'PASS (None committed)'}")
     print(f"Open-Source LICENSE:   {'FAIL (Found LICENSE)' if has_license else 'PASS (No LICENSE as required)'}")
     print(f"Docker Setup:          {'PASS' if has_docker else 'FAIL'}")
@@ -69,6 +72,7 @@ def audit_project():
         "prod_files": total_prod_files,
         "test_files": test_files,
         "commit_count": commit_count,
+        "pr_count": pr_count,
         "has_env": has_env,
         "has_license": has_license
     }
