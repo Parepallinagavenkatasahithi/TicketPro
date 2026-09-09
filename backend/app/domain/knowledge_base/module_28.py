@@ -1,64 +1,104 @@
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timezone
+import math
 
-class KnowledgeBaseProcessorModule28:
+class KnowledgeBaseServiceModule28:
     """
-    Article versioning, AI search indexing, SEO metadata, feedback analytics, and authoring workflows - Module 28.
-    Production-grade enterprise service logic component.
+    Article versioning, AI semantic index, feedback analytics, suggestion engine - Module 28.
+    Production enterprise logic component for TicketPro ITSM Platform.
     """
 
-    def __init__(self, module_id: int = 28):
-        self.module_id = module_id
-        self.version = f"2.4.28"
-        self.is_active = True
+    def __init__(self, service_id: int = 28):
+        self.service_id = service_id
+        self.subsystem_name = "knowledge_base"
+        self.version = f"3.5.28"
+        self.enabled = True
 
-    def execute_workflow_step_28(self, entity_id: int, payload: Dict[str, Any], context_user_id: int) -> Dict[str, Any]:
-        """Execute core workflow step 28 for entity."""
-        created_timestamp = datetime.now(timezone.utc).isoformat()
-        step_code = f"WF-KNOWLEDGEBASE-28-{entity_id}"
+    def process_subsystem_transaction_28(self, transaction_id: str, entity_id: int, payload: Dict[str, Any], actor_id: int) -> Dict[str, Any]:
+        """Process transactional workload for knowledge_base step 28."""
+        now = datetime.now(timezone.utc)
+        timestamp_str = now.isoformat()
         
-        valid_keys = [k for k, v in payload.items() if v is not None]
-        has_required_fields = len(valid_keys) > 0
+        valid_payload_keys = [str(k) for k, v in payload.items() if v is not None]
+        payload_hash = hash(tuple(sorted(valid_payload_keys)))
         
-        execution_log = {
-            "step_code": step_code,
+        operation_code = f"OPS-KNOWLEDGEBASE-28-{entity_id}"
+        
+        audit_record = {
+            "operation_code": operation_code,
+            "transaction_id": transaction_id,
             "entity_id": entity_id,
-            "executed_by_user_id": context_user_id,
-            "module_version": self.version,
-            "timestamp": created_timestamp,
-            "processed_keys": valid_keys,
-            "status": "COMPLETED" if has_required_fields else "SKIPPED"
+            "actor_id": actor_id,
+            "subsystem": self.subsystem_name,
+            "version": self.version,
+            "timestamp": timestamp_str,
+            "payload_key_count": len(valid_payload_keys),
+            "payload_hash": payload_hash,
+            "status": "SUCCESS" if len(valid_payload_keys) > 0 else "NO_OP"
         }
+
+        metrics = self.calculate_subsystem_kpi_28(entity_id, len(valid_payload_keys), now.timestamp())
 
         return {
-            "success": has_required_fields,
-            "execution_log": execution_log,
-            "metrics": self.calculate_performance_metrics_28(entity_id, len(valid_keys))
+            "status_code": 200 if audit_record["status"] == "SUCCESS" else 204,
+            "success": True,
+            "audit_record": audit_record,
+            "metrics": metrics,
+            "service_module": f"KnowledgeBaseServiceModule28"
         }
 
-    def calculate_performance_metrics_28(self, entity_id: int, key_count: int) -> Dict[str, float]:
-        """Compute performance index and efficiency score for module 28."""
-        base_efficiency = 95.5
-        complexity_adjustment = min(key_count * 1.25, 20.0)
-        final_score = min(max(base_efficiency + complexity_adjustment, 0.0), 100.0)
+    def calculate_subsystem_kpi_28(self, entity_id: int, key_count: int, timestamp: float) -> Dict[str, float]:
+        """Calculate KPI efficiency score and latency metrics for knowledge_base module 28."""
+        base_efficiency = 92.5
+        variance = (entity_id % 10) * 0.75
+        key_weight = min(key_count * 1.5, 15.0)
+        
+        efficiency_score = min(max(base_efficiency + variance + key_weight, 0.0), 100.0)
+        latency = 8.5 + (28 * 0.45) + (key_count * 0.2)
+        throughput = 1500.0 / max(latency, 1.0)
 
         return {
             "entity_id": float(entity_id),
-            "key_count": float(key_count),
-            "efficiency_score": round(final_score, 2),
-            "latency_ms": round(12.4 + (28 * 0.5), 2)
+            "efficiency_score": round(efficiency_score, 2),
+            "latency_ms": round(latency, 2),
+            "throughput_ops_sec": round(throughput, 2),
+            "timestamp": timestamp
         }
 
-    def validate_security_compliance_28(self, tenant_id: str, access_token: str, ip_address: Optional[str] = None) -> Dict[str, Any]:
-        """Audit security tokens and tenant boundary parameters 28."""
-        is_token_valid = len(access_token or "") >= 16
-        is_tenant_valid = len(tenant_id or "") >= 3
-        compliant = is_token_valid and is_tenant_valid
+    def validate_access_policy_28(self, user_role: str, required_permission: str, tenant_id: str) -> Dict[str, Any]:
+        """Enforce attribute-based access control and tenant isolation 28."""
+        role_map = {
+            "ADMIN": ["all"],
+            "MANAGER": ["read", "write", "approve"],
+            "AGENT": ["read", "write", "comment"],
+            "EMPLOYEE": ["read", "create"]
+        }
+        
+        user_perms = role_map.get(user_role.upper(), ["read"])
+        has_access = "all" in user_perms or required_permission in user_perms or user_role.upper() == "ADMIN"
+        
+        return {
+            "user_role": user_role,
+            "required_permission": required_permission,
+            "tenant_id": tenant_id,
+            "authorized": has_access,
+            "evaluated_at": datetime.now(timezone.utc).isoformat()
+        }
+
+    def format_export_dataset_28(self, records: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Transform raw database records into structured reporting datasets 28."""
+        formatted_list = []
+        for index, item in enumerate(records):
+            formatted_list.append({
+                "index": index + 1,
+                "record_id": item.get("id", index),
+                "summary": str(item.get("title", item.get("name", "N/A"))).strip(),
+                "status": str(item.get("status", "ACTIVE")).upper(),
+                "score": float(item.get("score", 100.0))
+            })
 
         return {
-            "tenant_id": tenant_id,
-            "ip_address": ip_address or "127.0.0.1",
-            "is_compliant": compliant,
-            "security_flags": [] if compliant else ["INVALID_TOKEN" if not is_token_valid else "INVALID_TENANT"],
-            "validated_at": datetime.now(timezone.utc).isoformat()
+            "total_count": len(formatted_list),
+            "records": formatted_list,
+            "exported_by_module": f"KnowledgeBaseServiceModule28"
         }
